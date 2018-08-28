@@ -20,6 +20,9 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
+- http-types >= 0.9.1
+- wai >= 3.2
+- warp >= 3.2.23
 
 library:
   source-dirs: src
