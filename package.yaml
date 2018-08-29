@@ -23,6 +23,7 @@ dependencies:
 - http-types >= 0.9.1
 - wai >= 3.2
 - warp >= 3.2.23
+- bytestring >= 0.10
 
 library:
   source-dirs: src

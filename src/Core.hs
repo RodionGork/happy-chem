@@ -1,10 +1,13 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Core
     ( entryPoint
     ) where
 
-import Network.Wai (responseLBS, Application)
+import System.IO
+import Control.Monad.IO.Class
+import qualified Data.ByteString.Char8 as C8
+import qualified Data.ByteString.Lazy.Char8 as LC8
+
+import Network.Wai (responseLBS, Application, requestMethod, requestBody)
 import Network.Wai.Handler.Warp (run)
 import Network.HTTP.Types (status200)
 import Network.HTTP.Types.Header (hContentType)
@@ -16,6 +19,24 @@ entryPoint = do
     run port app
 
 app :: Application
-app req f =
-    f $ responseLBS status200 [(hContentType, "text/plain")] "Hi, People!"
+app request respond
+    | requestMethod request == (C8.pack "POST")
+    = doPost request respond
+    | otherwise
+    = doGet respond
+
+doPost request respond = do
+    c <- requestBody request
+    writeFile "state.txt" (C8.unpack c)
+    respond $ responseLBS
+        status200
+        []
+        (LC8.pack "ya post\n")
+
+doGet respond = do
+    c <- readFile "state.txt"
+    respond $ responseLBS
+        status200
+        []
+        (LC8.pack $ "ya get: " ++ c ++ "\n")
 
