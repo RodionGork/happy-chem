@@ -4,3 +4,4 @@ import Core
 
 main :: IO ()
 main = entryPoint
+

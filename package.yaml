@@ -24,6 +24,10 @@ dependencies:
 - wai >= 3.2
 - warp >= 3.2.23
 - bytestring >= 0.10
+- hasbolt
+- text
+- data-default
+- containers
 
 library:
   source-dirs: src
