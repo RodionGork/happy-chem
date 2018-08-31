@@ -1,6 +1,7 @@
 module Db
     (
     fetchMolecule,
+    fetchAllMolecules,
     test 
     ) where
 
@@ -10,17 +11,16 @@ import Data.Map
 import Data.Maybe
 import qualified Data.Text as T
 
+import Entities (Molecule(..))
+
 toNode :: Monad m => Record -> m Node
 toNode record = record `at` (T.pack "n") >>= exact
-
-data Molecule = Molecule {id :: Int, iupacName :: T.Text, smiles :: T.Text}
-    deriving (Show, Eq)
 
 moleculeFromNode (Node {labels = labels, nodeProps = props}) =
     let name = textFromValue $ Data.Map.lookup (T.pack "iupacName") props
         smiles = textFromValue $ Data.Map.lookup (T.pack "smiles") props
         pcId = intFromValue $ Data.Map.lookup (T.pack "id") props
-    in Molecule {Db.id = pcId, iupacName = name, smiles = smiles}
+    in Molecule {Entities.id = pcId, iupacName = name, smiles = smiles}
 
 textFromValue :: Maybe Value -> T.Text
 textFromValue (Just (T val)) = val
@@ -30,14 +30,25 @@ intFromValue :: Maybe Value -> Int
 intFromValue (Just (I val)) = val
 intFromValue _ = 0
 
-fetchMolecule :: Int -> IO Molecule
-fetchMolecule pcid = do
+wrapInConnection query = do
     pipe <- connect $ def { host = "172.17.0.1", user = (T.pack "neo4j"), password = (T.pack "j4oen") }
-    records <- run pipe $ queryP (T.pack "MATCH (n:molecule) where n.id={pcid} RETURN n") (fromList [((T.pack "pcid"), I pcid)])
-    putStrLn $ show records
-    node <- toNode (head records)
+    records <- run pipe query
     close pipe
-    return $ moleculeFromNode node
+    return records
+
+fetchMolecule :: Int -> IO (Maybe Molecule)
+fetchMolecule pcid = do
+    records <- wrapInConnection $ queryP
+        (T.pack "MATCH (n:molecule) where n.id={pcid} RETURN n")
+        (fromList [((T.pack "pcid"), I pcid)])
+    nodes <- sequence $ Prelude.map toNode records
+    return $ listToMaybe $ Prelude.map moleculeFromNode nodes
+
+fetchAllMolecules :: IO [Molecule]
+fetchAllMolecules = do
+    records <- wrapInConnection $ query (T.pack "MATCH (n:molecule) RETURN n")
+    nodes <- sequence $ Prelude.map toNode records
+    return $ Prelude.map moleculeFromNode nodes
 
 test = do
     m <- fetchMolecule 1

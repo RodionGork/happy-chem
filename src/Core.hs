@@ -10,10 +10,12 @@ import qualified Data.ByteString.Lazy.Char8 as LC8
 
 import Network.Wai (responseLBS, Application, requestMethod, requestBody, pathInfo)
 import Network.Wai.Handler.Warp (run)
-import Network.HTTP.Types (status200)
+import Network.HTTP.Types (status200, status404)
+import Network.Wai.Internal (ResponseReceived(..))
 import Network.HTTP.Types.Header (hContentType)
 
 import qualified Db
+import Entities (Molecule(..))
 
 entryPoint :: IO ()
 entryPoint = do
@@ -22,37 +24,47 @@ entryPoint = do
     run port app
 
 app :: Application
-app request respond
-    | requestMethod request == (C8.pack "POST")
-    = doPost request respond
+app req resp
+    | requestMethod req == (C8.pack "POST")
+    = doPost req resp
     | otherwise
-    = doGet request respond
+    = doGet req resp
 
-doPost request respond = do
-    c <- requestBody request
+doPost req resp = do
+    c <- requestBody req
     writeFile "state.txt" (C8.unpack c)
-    respond $ responseLBS
+    resp $ responseLBS
         status200
         []
         (LC8.pack "ya post\n")
 
-doGet request respond =
-    let path = map T.unpack (pathInfo request)
+doGet req resp =
+    let path = filter (/= "") (map T.unpack (pathInfo req))
     in case path of
-        ["molecule", strId] -> doGetMolecule strId respond
-        _ -> doGetState respond
+        ["molecule"] -> respondFun resp doGetAllMolecules
+        ["molecule", strId] -> respondFun resp $ doGetMolecule strId
+        _ -> respond resp (Just (show path))
 
-doGetState respond = do
-    c <- readFile "state.txt"
-    respond $ responseLBS
-        status200
-        []
-        (LC8.pack $ "ya get: " ++ c ++ "\n")
+respondFun resp fun = do
+    res <- fun
+    respond resp $ res
 
-doGetMolecule strId respond = do
+respond resp maybeRes = do
+    let (stat, text) = case maybeRes of
+                Nothing -> (status404, "not found :(")
+                Just v -> (status200, v)
+    resp $ responseLBS stat [] (LC8.pack $ text ++ "\n")
+    return ResponseReceived
+
+doGetMolecule :: String -> IO (Maybe String)
+doGetMolecule strId = do
     m <- Db.fetchMolecule (read strId :: Int)
-    respond $ responseLBS
-        status200
-        []
-        (LC8.pack $ "ya get molecule" ++ (show m) ++ "\n")
+    case m of
+        Just v -> return (Just (show v))
+        Nothing -> return Nothing
+
+doGetAllMolecules :: IO (Maybe String)
+doGetAllMolecules = do
+    ms <- Db.fetchAllMolecules
+    return $ Just (show ms)
 
