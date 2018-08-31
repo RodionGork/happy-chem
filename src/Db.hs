@@ -2,9 +2,11 @@ module Db
     (
     fetchMolecule,
     fetchAllMolecules,
+    storeMolecule,
     test 
     ) where
 
+import qualified Control.Exception as Exc
 import Database.Bolt
 import Data.Default
 import Data.Map
@@ -36,6 +38,9 @@ wrapInConnection query = do
     close pipe
     return records
 
+catchAny :: IO a -> (Exc.SomeException -> IO a) -> IO a
+catchAny = Exc.catch
+
 fetchMolecule :: Int -> IO (Maybe Molecule)
 fetchMolecule pcid = do
     records <- wrapInConnection $ queryP
@@ -49,6 +54,24 @@ fetchAllMolecules = do
     records <- wrapInConnection $ query (T.pack "MATCH (n:molecule) RETURN n")
     nodes <- sequence $ Prelude.map toNode records
     return $ Prelude.map moleculeFromNode nodes
+
+storeMoleculeUnsafe pcid name smiles = do
+    k <- wrapInConnection $ queryP
+        (T.pack "CREATE (:molecule {id:{i}, iupacName:{n}, smiles:{s}})")
+        (fromList [((T.pack "i"), I pcid), ((T.pack "n"), T name), ((T.pack "s"), T smiles)])
+    return True
+
+storeMolecule :: Int -> T.Text -> T.Text -> IO Bool
+storeMolecule pcid name smiles = do
+    result <- catchAny (storeMoleculeUnsafe pcid name smiles)
+        (\e -> return False)
+    return result
+
+-- not used now, just don't forget
+initDb :: IO Bool
+initDb = do
+    records <- wrapInConnection $ query (T.pack "CREATE CONSTRAINT ON (m:molecule) ASSERT m.id IS UNIQUE")
+    return True
 
 test = do
     m <- fetchMolecule 1

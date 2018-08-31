@@ -1,5 +1,5 @@
-module Core
-    ( entryPoint
+module WebServer
+    ( start
     ) where
 
 import System.IO
@@ -17,8 +17,8 @@ import Network.HTTP.Types.Header (hContentType)
 import qualified Db
 import Entities (Molecule(..))
 
-entryPoint :: IO ()
-entryPoint = do
+start :: IO ()
+start = do
     let port = 18080
     putStrLn $ "Listening on port " ++ show port
     run port app
@@ -31,19 +31,25 @@ app req resp
     = doGet req resp
 
 doPost req resp = do
-    c <- requestBody req
+    body <- requestBody req
+    case parsePath req of
+        ["molecule", strId] -> respondFun resp $ doPostMolecule strId body
+    {-
     writeFile "state.txt" (C8.unpack c)
     resp $ responseLBS
         status200
         []
         (LC8.pack "ya post\n")
+    -}
 
 doGet req resp =
-    let path = filter (/= "") (map T.unpack (pathInfo req))
-    in case path of
+    case parsePath req of
         ["molecule"] -> respondFun resp doGetAllMolecules
         ["molecule", strId] -> respondFun resp $ doGetMolecule strId
-        _ -> respond resp (Just (show path))
+        _ -> respond resp Nothing
+
+parsePath req =
+    filter (/= "") (map T.unpack (pathInfo req))
 
 respondFun resp fun = do
     res <- fun
@@ -67,4 +73,11 @@ doGetAllMolecules :: IO (Maybe String)
 doGetAllMolecules = do
     ms <- Db.fetchAllMolecules
     return $ Just (show ms)
+
+doPostMolecule :: String -> C8.ByteString -> IO (Maybe String)
+doPostMolecule strId body = do
+    let (smiles, name) = T.breakOn (T.pack " ") (T.pack $ C8.unpack body)
+        pcid = (read strId :: Int)
+    success <- Db.storeMolecule pcid (T.strip name) smiles
+    return $ Just (if success then "ok" else "error")
 

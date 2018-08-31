@@ -1,7 +1,6 @@
 module Main where
 
-import Core
+import qualified WebServer
 
 main :: IO ()
-main = entryPoint
-
+main = WebServer.start
