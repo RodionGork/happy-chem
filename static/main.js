@@ -4,9 +4,13 @@ $(function(){
 });
 
 function moleculeLookup() {
-    var id = parseInt($('#molecule-id').val());
-    if (Number.isNaN(id)) {
+    var idStr = $('#molecule-id').val();
+    var id = parseInt(idStr);
+    if (idStr === '*') {
         id = '';
+    } else if (Number.isNaN(id)) {
+        setMoleculeResult(errorText("Please, specify id or * for all"));
+        return;
     }
     $.ajax({
         url: './molecule/' + id,

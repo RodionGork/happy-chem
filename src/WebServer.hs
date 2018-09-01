@@ -14,7 +14,6 @@ import Network.Wai.Internal (ResponseReceived(..))
 import qualified Network.HTTP.Types.Header as HTTP.Header
 
 import qualified Db
-import Entities (Molecule(..))
 
 start :: IO ()
 start = do
@@ -40,6 +39,7 @@ doGet req resp =
         ["static", fileName] -> respondFile resp fileName
         ["molecule"] -> respondFun resp doGetAllMolecules
         ["molecule", strId] -> respondFun resp $ doGetMolecule strId
+        ["catalyst", strId] -> respondFun resp $ doGetCatalyst strId
         _ -> respond resp Nothing
 
 parsePath req =
@@ -87,4 +87,12 @@ doPostMolecule strId body = do
         pcid = (read strId :: Int)
     success <- Db.storeMolecule pcid (T.strip name) smiles
     return $ Just (if success then "ok" else "error")
+
+doGetCatalyst :: String -> IO (Maybe String)
+doGetCatalyst strId = do
+    m <- Db.fetchCatalyst (read strId :: Int)
+    case m of
+        Just v -> return (Just (show v))
+        Nothing -> return Nothing
+
 
