@@ -1,5 +1,6 @@
 $(function(){
     $('#lookup-molecule').click(moleculeLookup);
+    $('#add-molecule').click(moleculeAdd);
 });
 
 function moleculeLookup() {
@@ -9,12 +10,43 @@ function moleculeLookup() {
     }
     $.ajax({
         url: './molecule/' + id,
+        dataType: 'text',
         success: function(data) {
-            $('#molecule-result').html(data.replace(/\;/g, '<br/>'));
+            setMoleculeResult(data.replace(/\;/g, '<br/>'));
         },
         error: function(resp) {
-            $('#molecule-result').html(resp.responseText);
-        },
-        dataType: 'text'
+            setMoleculeResult(errorText(resp.responseText));
+        }
     });
 }
+
+function moleculeAdd() {
+    var id = parseInt($('#molecule-id').val());
+    var name = $('#molecule-name').val().trim();
+    var smiles = $('#molecule-smiles').val().trim();
+    if (Number.isNaN(id) || name === '' || smiles === '') {
+        setMoleculeResult(errorText('Please, fill all 3 fields'));
+        return;
+    }
+    $.ajax({
+        method: 'POST',
+        url: './molecule/' + id,
+        data: smiles + ' ' + name,
+        dataType: 'text',
+        success: function(data) {
+            if (data.trim() !== 'ok') {
+                data = errorText(data);
+            }
+            setMoleculeResult(data);
+        }
+    });
+}
+
+function setMoleculeResult(res) {
+    $('#molecule-result').html(res);
+}
+
+function errorText(str) {
+    return '<span class="error">' + str + '</span>';
+}
+

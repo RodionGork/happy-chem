@@ -20,3 +20,18 @@ h1 {
     font-style: italic;
     color: #888;
 }
+
+.result {
+    color: #417;
+    font-weight: bold;
+    font-style: italic;
+}
+
+.error {
+    background-color: #F00;
+    color: #FF0;
+    font-weight: bold;
+    padding: 3px;
+    border-radius: 3px;
+}
+

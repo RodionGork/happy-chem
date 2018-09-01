@@ -1,0 +1,21 @@
+5950,Alanine,O=C(O)C(N)C
+232,Arginine,NC(CCCNC(N)=N)C(O)=O
+236,Asparagine,O=C(N)C[C@H](N)C(=O)O
+424,Aspartic acid,O=C(O)CC(N)C(=O)O
+5862,Cysteine,C([C@@H](C(=O)O)N)S
+33032,L-glutamic acid,C(CC(=O)O)C(C(=O)O)N
+738,Glutamine,O=C(N)CCC(N)C(=O)O
+750,Glycine,C(C(=O)O)N
+773,Histidine,O=C([C@H](CC1=CNC=N1)N)O
+791,Isoleucine,CC[C@H](C)[C@@H](C(=O)O)N
+6106,Leucine,CC(C)C[C@@H](C(=O)O)N
+866,Lysine,C(CCN)CC(C(=O)O)N
+876,Methionine,CSCC[C@H](N)C(=O)O
+994,Phenylalanine,N[C@@H](CC1=CC=CC=C1)C(O)=O
+6288,Threonine,C[C@H]([C@@H](C(=O)O)N)O
+6305,Tryptophan,C1=CC=C2C(=C1)C(=CN2)CC(C(=O)O)N
+1182,Valine,CC(C)[C@@H](C(=O)O)N
+614,Proline,OC(=O)C1CCCN1
+1153,Tyrosine,C1=CC(=CC=C1CC(C(=O)O)N)O
+617,Serine,C([C@@H](C(=O)O)N)O
+25076,Selenocysteine,C(C(C(=O)O)N)[SeH]
