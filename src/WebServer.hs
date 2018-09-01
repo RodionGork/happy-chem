@@ -2,17 +2,16 @@ module WebServer
     ( start
     ) where
 
-import System.IO
-import Control.Monad.IO.Class
 import qualified Data.Text as T
+import qualified Data.List as List
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy.Char8 as LC8
 
-import Network.Wai (responseLBS, Application, requestMethod, requestBody, pathInfo)
-import Network.Wai.Handler.Warp (run)
-import Network.HTTP.Types (status200, status404)
+import qualified Network.Wai as Wai
+import qualified Network.Wai.Handler.Warp as Warp
+import qualified Network.HTTP.Types as HTTP.Types
 import Network.Wai.Internal (ResponseReceived(..))
-import Network.HTTP.Types.Header (hContentType)
+import qualified Network.HTTP.Types.Header as HTTP.Header
 
 import qualified Db
 import Entities (Molecule(..))
@@ -21,46 +20,53 @@ start :: IO ()
 start = do
     let port = 18080
     putStrLn $ "Listening on port " ++ show port
-    run port app
+    Warp.run port app
 
-app :: Application
+app :: Wai.Application
 app req resp
-    | requestMethod req == (C8.pack "POST")
+    | Wai.requestMethod req == (C8.pack "POST")
     = doPost req resp
     | otherwise
     = doGet req resp
 
 doPost req resp = do
-    body <- requestBody req
+    body <- Wai.requestBody req
     case parsePath req of
         ["molecule", strId] -> respondFun resp $ doPostMolecule strId body
-    {-
-    writeFile "state.txt" (C8.unpack c)
-    resp $ responseLBS
-        status200
-        []
-        (LC8.pack "ya post\n")
-    -}
 
 doGet req resp =
     case parsePath req of
+        [] -> respondFile resp "index.html"
+        ["static", fileName] -> respondFile resp fileName
         ["molecule"] -> respondFun resp doGetAllMolecules
         ["molecule", strId] -> respondFun resp $ doGetMolecule strId
         _ -> respond resp Nothing
 
 parsePath req =
-    filter (/= "") (map T.unpack (pathInfo req))
+    filter (/= "") (map T.unpack (Wai.pathInfo req))
 
 respondFun resp fun = do
     res <- fun
     respond resp $ res
 
 respond resp maybeRes = do
-    let (stat, text) = case maybeRes of
-                Nothing -> (status404, "not found :(")
-                Just v -> (status200, v)
-    resp $ responseLBS stat [] (LC8.pack $ text ++ "\n")
+    let (status, text) = case maybeRes of
+                Nothing -> (HTTP.Types.notFound404, "not found :(")
+                Just v -> (HTTP.Types.ok200, v)
+        headers = [(HTTP.Header.hContentType, C8.pack "text/plain")]
+    resp $ Wai.responseLBS status headers (LC8.pack $ text ++ "\n")
     return ResponseReceived
+
+respondFile resp fileName = do
+    let headers = [(HTTP.Header.hContentType, C8.pack $ staticContentType fileName)]
+    resp $ Wai.responseFile HTTP.Types.ok200 headers ("static/" ++ fileName) Nothing
+
+staticContentType fileName =
+    case T.unpack $ T.takeWhileEnd (/= '.') (T.pack fileName) of
+        "html" -> "text/html"
+        "js" -> "application/javascript"
+        "css" -> "text/css"
+        _ -> "text/plain"
 
 doGetMolecule :: String -> IO (Maybe String)
 doGetMolecule strId = do
@@ -72,7 +78,8 @@ doGetMolecule strId = do
 doGetAllMolecules :: IO (Maybe String)
 doGetAllMolecules = do
     ms <- Db.fetchAllMolecules
-    return $ Just (show ms)
+    let res = Prelude.map show ms
+    return $ Just (List.intercalate "; " res)
 
 doPostMolecule :: String -> C8.ByteString -> IO (Maybe String)
 doPostMolecule strId body = do

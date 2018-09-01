@@ -1,0 +1,22 @@
+body {
+    background-color: #AAA;
+    font-family: arial;
+    color: #222;
+}
+
+#content {
+    width: 800px;
+    margin: 20px auto;
+    border-radius: 10px;
+    background-color: #EEE;
+    padding: 20px;
+}
+
+h1 {
+    margin: 3px 0px;
+}
+
+.hint {
+    font-style: italic;
+    color: #888;
+}

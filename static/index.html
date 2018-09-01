@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Happy Chem</title>
+    <link rel="stylesheet" href="./static/custom.css"/>
+    <script src="./static/jquery.js"></script>
+    <script>$.getScript('./static/main.js')</script>
+</head>
+<body>
+<div id="content">
+    <h1>Happy Chem</h1>
+    <div class="hint">Don't take it too serious, please</div>
+
+    <h3>Molecules</h3>
+    <div>PubChem #id:
+        <input type="text" id="molecule-id" size="7"/>
+        <input type="button" id="lookup-molecule" value="Lookup">
+        or specify also <br/><br/>
+        IUPAC name <input type="text" id="molecule-name"/>
+        and SMILES <input type="text" id="molecule-smiles"/>
+        to 
+        <input type="button" id="add-molecule" value="Add New">
+    </div>
+    <br/>
+    <div id="molecule-result" class="hint"></div>
+</div>
+</body>
+</html>

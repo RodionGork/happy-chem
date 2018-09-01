@@ -7,35 +7,38 @@ module Db
     ) where
 
 import qualified Control.Exception as Exc
-import Database.Bolt
-import Data.Default
-import Data.Map
-import Data.Maybe
+import qualified Database.Bolt as Hb
+import Data.Default (def)
+import qualified Data.Map as Map
+import Data.Maybe (Maybe, listToMaybe)
 import qualified Data.Text as T
 
 import Entities (Molecule(..))
 
-toNode :: Monad m => Record -> m Node
-toNode record = record `at` (T.pack "n") >>= exact
+toNode :: Monad m => Hb.Record -> m Hb.Node
+toNode record = record `Hb.at` (T.pack "n") >>= Hb.exact
 
-moleculeFromNode (Node {labels = labels, nodeProps = props}) =
-    let name = textFromValue $ Data.Map.lookup (T.pack "iupacName") props
-        smiles = textFromValue $ Data.Map.lookup (T.pack "smiles") props
-        pcId = intFromValue $ Data.Map.lookup (T.pack "id") props
+moleculeFromNode (Hb.Node {Hb.labels = labels, Hb.nodeProps = props}) =
+    let name = textFromValue $ Map.lookup (T.pack "iupacName") props
+        smiles = textFromValue $ Map.lookup (T.pack "smiles") props
+        pcId = intFromValue $ Map.lookup (T.pack "id") props
     in Molecule {Entities.id = pcId, iupacName = name, smiles = smiles}
 
-textFromValue :: Maybe Value -> T.Text
-textFromValue (Just (T val)) = val
+textFromValue :: Maybe Hb.Value -> T.Text
+textFromValue (Just (Hb.T val)) = val
 textFromValue _ = T.pack ""
 
-intFromValue :: Maybe Value -> Int
-intFromValue (Just (I val)) = val
+intFromValue :: Maybe Hb.Value -> Int
+intFromValue (Just (Hb.I val)) = val
 intFromValue _ = 0
 
 wrapInConnection query = do
-    pipe <- connect $ def { host = "172.17.0.1", user = (T.pack "neo4j"), password = (T.pack "j4oen") }
-    records <- run pipe query
-    close pipe
+    pipe <- Hb.connect $ def {
+        Hb.host = "172.17.0.1",
+        Hb.user = (T.pack "neo4j"),
+        Hb.password = (T.pack "j4oen")}
+    records <- Hb.run pipe query
+    Hb.close pipe
     return records
 
 catchAny :: IO a -> (Exc.SomeException -> IO a) -> IO a
@@ -43,22 +46,25 @@ catchAny = Exc.catch
 
 fetchMolecule :: Int -> IO (Maybe Molecule)
 fetchMolecule pcid = do
-    records <- wrapInConnection $ queryP
+    records <- wrapInConnection $ Hb.queryP
         (T.pack "MATCH (n:molecule) where n.id={pcid} RETURN n")
-        (fromList [((T.pack "pcid"), I pcid)])
+        (Map.fromList [((T.pack "pcid"), Hb.I pcid)])
     nodes <- sequence $ Prelude.map toNode records
     return $ listToMaybe $ Prelude.map moleculeFromNode nodes
 
 fetchAllMolecules :: IO [Molecule]
 fetchAllMolecules = do
-    records <- wrapInConnection $ query (T.pack "MATCH (n:molecule) RETURN n")
+    records <- wrapInConnection $ Hb.query (T.pack "MATCH (n:molecule) RETURN n")
     nodes <- sequence $ Prelude.map toNode records
     return $ Prelude.map moleculeFromNode nodes
 
 storeMoleculeUnsafe pcid name smiles = do
-    k <- wrapInConnection $ queryP
+    k <- wrapInConnection $ Hb.queryP
         (T.pack "CREATE (:molecule {id:{i}, iupacName:{n}, smiles:{s}})")
-        (fromList [((T.pack "i"), I pcid), ((T.pack "n"), T name), ((T.pack "s"), T smiles)])
+        (Map.fromList [
+            ((T.pack "i"), Hb.I pcid),
+            ((T.pack "n"), Hb.T name),
+            ((T.pack "s"), Hb.T smiles)])
     return True
 
 storeMolecule :: Int -> T.Text -> T.Text -> IO Bool
@@ -70,7 +76,8 @@ storeMolecule pcid name smiles = do
 -- not used now, just don't forget
 initDb :: IO Bool
 initDb = do
-    records <- wrapInConnection $ query (T.pack "CREATE CONSTRAINT ON (m:molecule) ASSERT m.id IS UNIQUE")
+    records <- wrapInConnection $ Hb.query
+        (T.pack "CREATE CONSTRAINT ON (m:molecule) ASSERT m.id IS UNIQUE")
     return True
 
 test = do
