@@ -47,20 +47,20 @@ catchAny = Exc.catch
 fetchMolecule :: Int -> IO (Maybe Molecule)
 fetchMolecule pcid = do
     records <- wrapInConnection $ Hb.queryP
-        (T.pack "MATCH (n:molecule) where n.id={pcid} RETURN n")
+        (T.pack "MATCH (n:Molecule) where n.id={pcid} RETURN n")
         (Map.fromList [((T.pack "pcid"), Hb.I pcid)])
     nodes <- sequence $ Prelude.map toNode records
     return $ listToMaybe $ Prelude.map moleculeFromNode nodes
 
 fetchAllMolecules :: IO [Molecule]
 fetchAllMolecules = do
-    records <- wrapInConnection $ Hb.query (T.pack "MATCH (n:molecule) RETURN n")
+    records <- wrapInConnection $ Hb.query (T.pack "MATCH (n:Molecule) RETURN n")
     nodes <- sequence $ Prelude.map toNode records
     return $ Prelude.map moleculeFromNode nodes
 
 storeMoleculeUnsafe pcid name smiles = do
     k <- wrapInConnection $ Hb.queryP
-        (T.pack "CREATE (:molecule {id:{i}, iupacName:{n}, smiles:{s}})")
+        (T.pack "CREATE (:Molecule {id:{i}, iupacName:{n}, smiles:{s}})")
         (Map.fromList [
             ((T.pack "i"), Hb.I pcid),
             ((T.pack "n"), Hb.T name),
@@ -77,7 +77,7 @@ storeMolecule pcid name smiles = do
 initDb :: IO Bool
 initDb = do
     records <- wrapInConnection $ Hb.query
-        (T.pack "CREATE CONSTRAINT ON (m:molecule) ASSERT m.id IS UNIQUE")
+        (T.pack "CREATE CONSTRAINT ON (m:Molecule) ASSERT m.id IS UNIQUE")
     return True
 
 test = do
