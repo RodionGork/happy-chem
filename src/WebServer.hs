@@ -38,6 +38,9 @@ doPost req resp = do
         ["molecule", strId] -> respondFun resp $ doPostMolecule strId body
         ["catalyst", strId] -> respondFun resp $ doPostCatalyst strId body
         ["reaction", strId] -> respondFun resp $ doPostReaction strId body
+        ["reagent_in"] -> respondFun resp $ doPostReagent body
+        ["product_from"] -> respondFun resp $ doPostProduct body
+        ["accelerate"] -> respondFun resp $ doPostAccelerate body
 
 doGet req resp =
     case parsePath req of
@@ -103,6 +106,18 @@ doPostReaction :: String -> C8.ByteString -> IO (Maybe String)
 doPostReaction strId body =
     doPostEntity Rct.fromStrings strId body
 
+doPostReagent :: C8.ByteString -> IO (Maybe String)
+doPostReagent body = do
+    doStore $ Db.storeReagent $ C8.unpack body
+
+doPostProduct :: C8.ByteString -> IO (Maybe String)
+doPostProduct body = do
+    doStore $ Db.storeProduct $ C8.unpack body
+
+doPostAccelerate :: C8.ByteString -> IO (Maybe String)
+doPostAccelerate body = do
+    doStore $ Db.storeAccelerate $ C8.unpack body
+
 doGetEntity :: (Show a) => (Int -> IO (Maybe a)) -> String -> IO (Maybe String)
 doGetEntity fetchFunc strId = do
     m <- fetchFunc (read strId :: Int)
@@ -120,6 +135,9 @@ doPostEntity :: (Db.Persistent a, Typeable a) =>
     (p -> String -> a) -> p -> C8.ByteString -> IO (Maybe String)
 doPostEntity func strId body = do
     let entity = func strId (C8.unpack body)
-    success <- Db.storeEntity entity
+    doStore $ Db.storeEntity entity
+
+doStore func = do
+    success <- func
     return $ Just (if success then "ok" else "error")
 

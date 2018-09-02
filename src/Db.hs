@@ -5,6 +5,9 @@ module Db
     fetchCatalyst,
     fetchAllCatalysts,
     storeEntity,
+    storeReagent,
+    storeProduct,
+    storeAccelerate,
     Persistent
     ) where
 
@@ -20,6 +23,7 @@ import qualified Data.Text as T
 import qualified Entities.Molecule as Mol
 import qualified Entities.Catalyst as Catl
 import qualified Entities.Reaction as Rct
+import qualified Relations as Relations
 
 class Persistent a where
     fromNode :: Hb.Node -> a
@@ -104,6 +108,24 @@ fetchAllCatalysts :: IO [Catl.Catalyst]
 fetchAllCatalysts =
     fetchAllEntities "Catalyst"
 
+storeReagent str = do
+    let params = Relations.reagentToParamMap str
+        query = "MATCH (m:Molecule),(r:Reaction) WHERE m.id={mol} and r.id={rct} "
+            ++ "CREATE (m)-[:REAGENT_IN {amount:{amount}}]->(r)"
+    executeCreation query params
+
+storeProduct str = do
+    let params = Relations.productToParamMap str
+        query = "MATCH (r:Reaction),(m:Molecule) WHERE r.id={rct} and m.id={mol} "
+            ++ "CREATE (r)-[:PRODUCT_FROM {amount:{amount}}]->(m)"
+    executeCreation query params
+
+storeAccelerate str = do
+    let params = Relations.accelerateToParamMap str
+        query = "MATCH (c:Catalyst),(r:Reaction) WHERE r.id={rct} and c.id={cat} "
+            ++ "CREATE (r)-[:ACCELERATE {temperature:{tmp}, pressure:{prs}}]->(c)"
+    executeCreation query params
+
 fetchEntity :: (Persistent a) => String -> Int -> IO (Maybe a)
 fetchEntity label pcid = do
     records <- wrapInConnection $ Hb.queryP
@@ -122,6 +144,9 @@ storeEntity :: (Persistent a, Typeable a) => a -> IO Bool
 storeEntity entity = do
     let params = toParamMap entity
         query = queryForCreate (show $ typeOf entity) params
+    executeCreation query params
+
+executeCreation query params = do
     catchAny (storeEntityUnsafe query params)
         (\e -> do
             print e
