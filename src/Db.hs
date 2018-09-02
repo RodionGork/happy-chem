@@ -19,6 +19,7 @@ import qualified Data.Text as T
 
 import qualified Entities.Molecule as Mol
 import qualified Entities.Catalyst as Catl
+import qualified Entities.Reaction as Rct
 
 class Persistent a where
     fromNode :: Hb.Node -> a
@@ -52,6 +53,16 @@ instance Persistent Catl.Catalyst where
         in case Catl.name c of
             Just n -> Map.insert (T.pack "name") (Hb.T $ T.pack n) map
             Nothing -> map
+
+instance Persistent Rct.Reaction where
+    fromNode Hb.Node {Hb.labels = labels, Hb.nodeProps = props} =
+        let name = strFromValue $ Map.lookup (T.pack "iupacName") props
+            pcId = intFromValue $ Map.lookup (T.pack "id") props
+        in Rct.Reaction {Rct.id = pcId, Rct.name = name}
+    toParamMap m =
+        Map.fromList [
+            (T.pack "id", Hb.I $ Rct.id m),
+            (T.pack "name", Hb.T $ T.pack $ Rct.name m)]
 
 strFromValue :: Maybe Hb.Value -> String
 strFromValue (Just (Hb.T val)) = T.unpack val
@@ -132,5 +143,7 @@ initDb = do
         (T.pack "CREATE CONSTRAINT ON (m:Molecule) ASSERT m.id IS UNIQUE")
     wrapInConnection $ Hb.query
         (T.pack "CREATE CONSTRAINT ON (c:Catalyst) ASSERT c.id IS UNIQUE")
+    wrapInConnection $ Hb.query
+        (T.pack "CREATE CONSTRAINT ON (r:Reaction) ASSERT r.id IS UNIQUE")
     return True
 

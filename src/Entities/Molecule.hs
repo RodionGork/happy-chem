@@ -11,7 +11,7 @@ data Molecule = Molecule {id :: Int, iupacName :: String, smiles :: String}
 
 instance Show Molecule where
     show Molecule {Entities.Molecule.id = pcid, iupacName = name, smiles = smiles} =
-        "[Molecule: " ++ name ++ ", #" ++ show pcid ++ ", " ++ smiles ++ "]"
+        "[Molecule" ++ show pcid ++ ": " ++ name ++ ", " ++ smiles ++ "]"
 
 fromStrings :: String -> String -> Molecule
 fromStrings strId smilesAndName =

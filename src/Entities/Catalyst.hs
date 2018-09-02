@@ -11,9 +11,9 @@ data Catalyst = Catalyst {id :: Int, name :: Maybe String, smiles :: String}
     deriving (Eq, Typeable)
 
 instance Show Catalyst where
-    show Catalyst {Entities.Catalyst.id = pcId, name = name, smiles = smiles} =
+    show Catalyst {Entities.Catalyst.id = pcid, name = name, smiles = smiles} =
         let nameStr = fromMaybe "?" name
-        in "[Catalyst: " ++ nameStr ++ ", #" ++ show pcId ++ ", " ++ smiles ++ "]"
+        in "[Catalyst" ++ show pcid ++ ": " ++ nameStr ++ ", " ++ smiles ++ "]"
 
 fromStrings :: String -> String -> Catalyst
 fromStrings strId smilesAndName =

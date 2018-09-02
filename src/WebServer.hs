@@ -17,6 +17,7 @@ import qualified Network.HTTP.Types.Header as HTTP.Header
 import qualified Db
 import qualified Entities.Molecule as Mol
 import qualified Entities.Catalyst as Catl
+import qualified Entities.Reaction as Rct
 
 start :: IO ()
 start = do
@@ -36,6 +37,7 @@ doPost req resp = do
     case parsePath req of
         ["molecule", strId] -> respondFun resp $ doPostMolecule strId body
         ["catalyst", strId] -> respondFun resp $ doPostCatalyst strId body
+        ["reaction", strId] -> respondFun resp $ doPostReaction strId body
 
 doGet req resp =
     case parsePath req of
@@ -96,6 +98,10 @@ doGetAllCatalysts =
 doPostCatalyst :: String -> C8.ByteString -> IO (Maybe String)
 doPostCatalyst strId body =
     doPostEntity Catl.fromStrings strId body
+
+doPostReaction :: String -> C8.ByteString -> IO (Maybe String)
+doPostReaction strId body =
+    doPostEntity Rct.fromStrings strId body
 
 doGetEntity :: (Show a) => (Int -> IO (Maybe a)) -> String -> IO (Maybe String)
 doGetEntity fetchFunc strId = do
