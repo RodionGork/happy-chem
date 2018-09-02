@@ -1,0 +1,36 @@
+-101,Arbuzov
+-102,Arndt-Eistert
+-103,Baeyer-Villiger
+-104,Baker-Venkataraman
+-105,Balz-Schiemann
+-106,Cadiot-Chodkiewicz
+-107,Chan-Lam
+-108,Collins
+-109,Dakin
+-110,Darzens
+-111,De Kimpe Aziridine Synthesis
+-112,Dess-Martin
+-113,Eschweiler-Clarke
+-114,Finkelstein
+-115,Fischer Indole Synthesis
+-116,Gewald
+-117,Hay
+-118,Hosomi-Sakurai
+-119,Iwanow
+-120,Jacobsen-Katsuki
+-121,Julia-Lythgoe
+-122,Kabachnik-Fields
+-123,Luche
+-124,McMurry
+-125,Nazarov Cyclization
+-126,Newman-Kwart
+-127,O'Donnel Amino Acid Synthesis
+-128,Oppenauer Oxidation
+-129,Paal-Knorr
+-130,Rosenmund-von Braun
+-131,Shapiro
+-132,Tsuji-Trost
+-133,Ugi
+-134,Van Leusen
+-135,Willgerodt-Kindler
+-136,Wurtz-Fittig

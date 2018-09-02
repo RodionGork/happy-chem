@@ -24,7 +24,7 @@ printf "\nAdding reactions:\n\n"
 while read p; do
   [ -z "$p" ] && continue
   PARAMS=$(echo "$HOST/reaction/$p" | sed -r 's/(.*)\,(.*)/-d \"\2\" \1/')
-  printf "$p - "
+  printf " $p - "
   eval "curl -X POST ""$PARAMS"
 done <reactions.txt
 

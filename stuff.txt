@@ -1,2 +1,0 @@
-create (:molecule {id:944,iupacName:"Nitric acid",smiles:"[N+](=O)(O)[O-]"})
-create (:molecule {id:5234,iupacName:"Sodium chloride",smiles:"[Na+].[Cl-]"})

@@ -1,0 +1,22 @@
+962,Hydrogen oxide,O
+5234,Sodium chloride,[Na+].[Cl-]
+23939,Platinum,[Pt]
+145068,Nitrogen monoxide,[N]=O
+3032552,Nitrogen dioxide,[N](=O)[O]
+948,Dinitrogen monoxide,N#[N+][O-]
+281,Carbon monoxide,[C-]#[O+]
+280,Carbon dioxide,C(=O)=O
+944,Nitric acid,[N+](=O)(O)[O-]
+284,Formic acid,O=CO
+1118,Sulfuric acid,OS(=O)(=O)O
+1100,Sulfurous acid,O=S(O)O
+313,Hydrochloric acid,Cl
+24341,Hypochlorous acid,ClO
+24453,Chlorous acid,O=ClO
+19654,Cloric acid,O=Cl(=O)O
+24247,Perchloric acid,OCl(=O)(=O)=O
+784,Hydrogen peroxide,OO
+887,Methanol,CO
+702,Ethanok,CCO
+516892,Sodium hydrogen carbonate,[Na+].OC([O-])=O
+10340,Sodium carbonate,[Na+].[Na+].[O-]C([O-])=O

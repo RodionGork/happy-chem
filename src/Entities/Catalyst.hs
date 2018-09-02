@@ -13,7 +13,7 @@ data Catalyst = Catalyst {id :: Int, name :: Maybe String, smiles :: String}
 instance Show Catalyst where
     show Catalyst {Entities.Catalyst.id = pcid, name = name, smiles = smiles} =
         let nameStr = fromMaybe "?" name
-        in "[Catalyst" ++ show pcid ++ ": " ++ nameStr ++ ", " ++ smiles ++ "]"
+        in "[Catalyst#" ++ show pcid ++ ": " ++ nameStr ++ ", " ++ smiles ++ "]"
 
 fromStrings :: String -> String -> Catalyst
 fromStrings strId smilesAndName =
