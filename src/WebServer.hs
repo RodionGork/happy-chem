@@ -6,6 +6,7 @@ import qualified Data.Text as T
 import qualified Data.List as List
 import qualified Data.ByteString.Char8 as C8
 import qualified Data.ByteString.Lazy.Char8 as LC8
+import Data.Typeable (Typeable)
 
 import qualified Network.Wai as Wai
 import qualified Network.Wai.Handler.Warp as Warp
@@ -14,6 +15,8 @@ import Network.Wai.Internal (ResponseReceived(..))
 import qualified Network.HTTP.Types.Header as HTTP.Header
 
 import qualified Db
+import qualified Entities.Molecule as Mol
+import qualified Entities.Catalyst as Catl
 
 start :: IO ()
 start = do
@@ -23,7 +26,7 @@ start = do
 
 app :: Wai.Application
 app req resp
-    | Wai.requestMethod req == (C8.pack "POST")
+    | Wai.requestMethod req == C8.pack "POST"
     = doPost req resp
     | otherwise
     = doGet req resp
@@ -32,6 +35,7 @@ doPost req resp = do
     body <- Wai.requestBody req
     case parsePath req of
         ["molecule", strId] -> respondFun resp $ doPostMolecule strId body
+        ["catalyst", strId] -> respondFun resp $ doPostCatalyst strId body
 
 doGet req resp =
     case parsePath req of
@@ -39,6 +43,7 @@ doGet req resp =
         ["static", fileName] -> respondFile resp fileName
         ["molecule"] -> respondFun resp doGetAllMolecules
         ["molecule", strId] -> respondFun resp $ doGetMolecule strId
+        ["catalyst"] -> respondFun resp $ doGetAllCatalysts
         ["catalyst", strId] -> respondFun resp $ doGetCatalyst strId
         _ -> respond resp Nothing
 
@@ -47,7 +52,7 @@ parsePath req =
 
 respondFun resp fun = do
     res <- fun
-    respond resp $ res
+    respond resp res
 
 respond resp maybeRes = do
     let (status, text) = case maybeRes of
@@ -69,30 +74,46 @@ staticContentType fileName =
         _ -> "text/plain"
 
 doGetMolecule :: String -> IO (Maybe String)
-doGetMolecule strId = do
-    m <- Db.fetchMolecule (read strId :: Int)
+doGetMolecule strId =
+    doGetEntity Db.fetchMolecule strId
+
+doGetAllMolecules :: IO (Maybe String)
+doGetAllMolecules =
+    doGetAllEntities Db.fetchAllMolecules
+
+doPostMolecule :: String -> C8.ByteString -> IO (Maybe String)
+doPostMolecule strId body =
+    doPostEntity Mol.fromStrings strId body
+
+doGetCatalyst :: String -> IO (Maybe String)
+doGetCatalyst strId =
+    doGetEntity Db.fetchCatalyst strId
+
+doGetAllCatalysts :: IO (Maybe String)
+doGetAllCatalysts =
+    doGetAllEntities Db.fetchAllCatalysts
+
+doPostCatalyst :: String -> C8.ByteString -> IO (Maybe String)
+doPostCatalyst strId body =
+    doPostEntity Catl.fromStrings strId body
+
+doGetEntity :: (Show a) => (Int -> IO (Maybe a)) -> String -> IO (Maybe String)
+doGetEntity fetchFunc strId = do
+    m <- fetchFunc (read strId :: Int)
     case m of
         Just v -> return (Just (show v))
         Nothing -> return Nothing
 
-doGetAllMolecules :: IO (Maybe String)
-doGetAllMolecules = do
-    ms <- Db.fetchAllMolecules
+doGetAllEntities :: (Show a) => IO [a] -> IO (Maybe String)
+doGetAllEntities fetchFunc = do
+    ms <- fetchFunc
     let res = Prelude.map show ms
     return $ Just (List.intercalate "; " res)
 
-doPostMolecule :: String -> C8.ByteString -> IO (Maybe String)
-doPostMolecule strId body = do
-    let (smiles, name) = T.breakOn (T.pack " ") (T.pack $ C8.unpack body)
-        pcid = (read strId :: Int)
-    success <- Db.storeMolecule pcid (T.strip name) smiles
+doPostEntity :: (Db.Persistent a, Typeable a) =>
+    (p -> String -> a) -> p -> C8.ByteString -> IO (Maybe String)
+doPostEntity func strId body = do
+    let entity = func strId (C8.unpack body)
+    success <- Db.storeEntity entity
     return $ Just (if success then "ok" else "error")
-
-doGetCatalyst :: String -> IO (Maybe String)
-doGetCatalyst strId = do
-    m <- Db.fetchCatalyst (read strId :: Int)
-    case m of
-        Just v -> return (Just (show v))
-        Nothing -> return Nothing
-
 
