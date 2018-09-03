@@ -213,7 +213,6 @@ reactionIngredients rid rel = do
                     then show (fromNode n :: Mol.Molecule)
                     else show (fromNode n :: Catl.Catalyst)
         s <- toRel r
-        putStrLn $ show s
         let Hb.Relationship {Hb.relProps = props} = s
         return (m, relationProperties props)) records
     return res
