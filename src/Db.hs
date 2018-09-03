@@ -8,6 +8,7 @@ module Db
     storeReagent,
     storeProduct,
     storeAccelerate,
+    shortestPath,
     Persistent
     ) where
 
@@ -31,6 +32,9 @@ class Persistent a where
 
 toNode :: Monad m => Hb.Record -> m Hb.Node
 toNode record = record `Hb.at` T.pack "n" >>= Hb.exact
+
+toPath :: Monad m => Hb.Record -> m Hb.Path
+toPath record = record `Hb.at` T.pack "p" >>= Hb.exact
 
 instance Persistent Mol.Molecule where
     fromNode Hb.Node {Hb.labels = labels, Hb.nodeProps = props} =
@@ -60,7 +64,7 @@ instance Persistent Catl.Catalyst where
 
 instance Persistent Rct.Reaction where
     fromNode Hb.Node {Hb.labels = labels, Hb.nodeProps = props} =
-        let name = strFromValue $ Map.lookup (T.pack "iupacName") props
+        let name = strFromValue $ Map.lookup (T.pack "name") props
             pcId = intFromValue $ Map.lookup (T.pack "id") props
         in Rct.Reaction {Rct.id = pcId, Rct.name = name}
     toParamMap m =
@@ -123,7 +127,7 @@ storeProduct str = do
 storeAccelerate str = do
     let params = Relations.accelerateToParamMap str
         query = "MATCH (c:Catalyst),(r:Reaction) WHERE r.id={rct} and c.id={cat} "
-            ++ "CREATE (r)-[:ACCELERATE {temperature:{tmp}, pressure:{prs}}]->(c)"
+            ++ "CREATE (c)-[:ACCELERATE {temperature:{tmp}, pressure:{prs}}]->(r)"
     executeCreation query params
 
 fetchEntity :: (Persistent a) => String -> Int -> IO (Maybe a)
@@ -160,6 +164,28 @@ queryForCreate label params =
     let f = (\k -> let s = T.unpack k in s ++ ":{" ++ s ++ "}")
         attribs = Prelude.map f $ Map.keys params
     in "CREATE (:" ++ label ++ " {" ++ (List.intercalate "," attribs) ++ "})"
+
+shortestPath :: Int -> Int -> IO (Maybe (Mol.Molecule, [(Rct.Reaction, Mol.Molecule)]))
+shortestPath srcId dstId = do
+    let q = "MATCH (src:Molecule {id:{s}}),(dst:Molecule {id:{d}}), p=shortestPath((src)-[*..7]->(dst)) RETURN p"
+        p = Map.fromList [(T.pack "s", Hb.I srcId), (T.pack "d", Hb.I dstId)]
+    records <- wrapInConnection $ Hb.queryP (T.pack q) p
+    case records of
+        [] ->
+            return Nothing
+        (record:_) -> do
+            path <- toPath record
+            return $ Just $ pathToList path
+
+pathToList :: Hb.Path -> (Mol.Molecule, [(Rct.Reaction, Mol.Molecule)])
+pathToList Hb.Path {Hb.pathNodes = (src:nodes)} =
+    (fromNode src, pathNodesToList nodes)
+
+pathNodesToList :: [Hb.Node] -> [(Rct.Reaction, Mol.Molecule)]
+pathNodesToList [] =
+    []
+pathNodesToList (rct:mol:tail) =
+    [(fromNode rct, fromNode mol)] ++ (pathNodesToList tail)
 
 -- not used now, just don't forget
 initDb :: IO Bool

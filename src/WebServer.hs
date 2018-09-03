@@ -50,6 +50,7 @@ doGet req resp =
         ["molecule", strId] -> respondFun resp $ doGetMolecule strId
         ["catalyst"] -> respondFun resp $ doGetAllCatalysts
         ["catalyst", strId] -> respondFun resp $ doGetCatalyst strId
+        ["find_path", srcId, dstId] -> respondFun resp $ doGetPath srcId dstId
         _ -> respond resp Nothing
 
 parsePath req =
@@ -140,4 +141,15 @@ doPostEntity func strId body = do
 doStore func = do
     success <- func
     return $ Just (if success then "ok" else "error")
+
+doGetPath srcId dstId = do
+    maybePath <- Db.shortestPath (read srcId :: Int) (read dstId :: Int)
+    case maybePath of
+        Just path -> return (Just $ pathToText path)
+        Nothing -> return Nothing
+
+pathToText :: (Mol.Molecule, [(Rct.Reaction, Mol.Molecule)]) -> String
+pathToText (src, list) =
+    let pathElem = (\(r, m) -> show r ++ "\n" ++ show m)
+    in show src ++ "\n" ++ (List.intercalate "\n" (Prelude.map pathElem list))
 
