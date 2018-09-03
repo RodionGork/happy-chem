@@ -24,6 +24,57 @@
     </div>
     <br/>
     <div id="molecule-result" class="result"></div>
+    
+    <hr/>
+    
+    <h3>Catalysts</h3>
+    <div>PubChem #id:
+        <input type="text" id="catalyst-id" size="7"/>
+        <input type="button" id="lookup-catalyst" value="Lookup">
+        or specify also <br/><br/>
+        Name <input type="text" id="catalyst-name"/>
+        and SMILES <input type="text" id="catalyst-smiles"/>
+        to 
+        <input type="button" id="add-catalyst" value="Add New">
+    </div>
+    <br/>
+    <div id="catalyst-result" class="result"></div>
+
+    <hr/>
+    
+    <h3>Reactions</h3>
+    <div>#id:
+        <input type="text" id="reaction-id" size="7"/>
+        <input type="button" id="lookup-reaction" value="Lookup">
+        or specify also <br/><br/>
+        Name <input type="text" id="reaction-name"/>
+        to 
+        <input type="button" id="add-reaction" value="Add New"> <br/><br/>
+        and also <br/><br/>
+        Reagent #id: 
+        <input type="text" id="reaction-reagent-id" size="7"/>
+        &nbsp; amount:
+        <input type="text" id="reaction-reagent-amount" size="7"/>
+        <input type="button" id="add-reagent" value="Add Reagent">
+        <br/><br/>
+        Product #id: 
+        <input type="text" id="reaction-product-id" size="7"/>
+        &nbsp; amount:
+        <input type="text" id="reaction-product-amount" size="7"/>
+        <input type="button" id="add-product" value="Add Product">
+        <br/><br/>
+        Catalyst #id: 
+        <input type="text" id="reaction-catalyst-id" size="7"/>
+        &nbsp; temperature (K):
+        <input type="text" id="reaction-catalyst-tmp" size="7"/>
+        &nbsp; pressure (kPa):
+        <input type="text" id="reaction-catalyst-prs" size="7"/>
+        <input type="button" id="add-reaction-catalyst" value="Add Catalyst">
+        <br/><br/>
+    </div>
+    <br/>
+    <div id="reaction-result" class="result"></div>
 </div>
 </body>
 </html>
+

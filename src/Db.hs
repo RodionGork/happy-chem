@@ -4,6 +4,9 @@ module Db
     fetchAllMolecules,
     fetchCatalyst,
     fetchAllCatalysts,
+    fetchReaction,
+    fetchAllReactions,
+    reactionIngredients,
     storeEntity,
     storeReagent,
     storeProduct,
@@ -35,6 +38,9 @@ toNode record = record `Hb.at` T.pack "n" >>= Hb.exact
 
 toPath :: Monad m => Hb.Record -> m Hb.Path
 toPath record = record `Hb.at` T.pack "p" >>= Hb.exact
+
+toRel :: Monad m => Hb.Record -> m Hb.Relationship
+toRel record = record `Hb.at` T.pack "x" >>= Hb.exact
 
 instance Persistent Mol.Molecule where
     fromNode Hb.Node {Hb.labels = labels, Hb.nodeProps = props} =
@@ -112,6 +118,14 @@ fetchAllCatalysts :: IO [Catl.Catalyst]
 fetchAllCatalysts =
     fetchAllEntities "Catalyst"
 
+fetchReaction :: Int -> IO (Maybe Rct.Reaction)
+fetchReaction pcid =
+    fetchEntity "Reaction" pcid
+
+fetchAllReactions :: IO [Rct.Reaction]
+fetchAllReactions =
+    fetchAllEntities "Reaction"
+
 storeReagent str = do
     let params = Relations.reagentToParamMap str
         query = "MATCH (m:Molecule),(r:Reaction) WHERE m.id={mol} and r.id={rct} "
@@ -186,6 +200,19 @@ pathNodesToList [] =
     []
 pathNodesToList (rct:mol:tail) =
     [(fromNode rct, fromNode mol)] ++ (pathNodesToList tail)
+
+reactionIngredients rid rel = do
+    -- failed to find a way to match rel type with parameter :(
+    let q = "MATCH (r:Reaction {id:{rid}})-[x:" ++ rel ++ "]-(n) RETURN x,n"
+        p = Map.fromList [(T.pack "rid", Hb.I rid)]
+    records <- wrapInConnection $ Hb.queryP (T.pack q) p
+    res <- Prelude.mapM (\r -> do
+        n <- toNode r
+        let m = fromNode n
+        s <- toRel r
+        let Hb.Relationship {Hb.relProps = props} = s
+        return (m :: Mol.Molecule, props)) records
+    return res
 
 -- not used now, just don't forget
 initDb :: IO Bool

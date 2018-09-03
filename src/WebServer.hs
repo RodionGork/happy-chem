@@ -50,6 +50,8 @@ doGet req resp =
         ["molecule", strId] -> respondFun resp $ doGetMolecule strId
         ["catalyst"] -> respondFun resp $ doGetAllCatalysts
         ["catalyst", strId] -> respondFun resp $ doGetCatalyst strId
+        ["reaction"] -> respondFun resp $ doGetAllReactions
+        ["reaction", strId] -> respondFun resp $ doGetReaction strId
         ["find_path", srcId, dstId] -> respondFun resp $ doGetPath srcId dstId
         _ -> respond resp Nothing
 
@@ -102,6 +104,28 @@ doGetAllCatalysts =
 doPostCatalyst :: String -> C8.ByteString -> IO (Maybe String)
 doPostCatalyst strId body =
     doPostEntity Catl.fromStrings strId body
+
+doGetReaction :: String -> IO (Maybe String)
+doGetReaction strId = do
+    let rid = read strId :: Int
+    rct <- Db.fetchReaction rid
+    case rct of
+        Just r -> do
+            ingredients <- doGetIngredients rid
+            return $ Just $ show r ++ "\n" ++ (showIngredients ingredients)
+        Nothing ->
+            return Nothing
+
+doGetIngredients rid = do
+    records <- Db.reactionIngredients rid "REAGENT_IN"
+    putStrLn $ show records
+    return []
+
+showIngredients _ =
+    ""
+doGetAllReactions :: IO (Maybe String)
+doGetAllReactions =
+    doGetAllEntities Db.fetchAllReactions
 
 doPostReaction :: String -> C8.ByteString -> IO (Maybe String)
 doPostReaction strId body =
