@@ -8,6 +8,7 @@ $(function(){
     $('#add-reagent').click(reagentAdd);
     $('#add-product').click(productAdd);
     $('#add-reaction-catalyst').click(reactionCatalystAdd);
+    $('#find-path').click(findPath);
 });
 
 function moleculeLookup() {
@@ -218,6 +219,29 @@ function reactionCatalystAdd() {
 }
 
 function setReactionResult(res) {
-    $('#reaction-result').html(res);
+    $('#reaction-result').html(res.replace(/\n/g, '<br/>'));
+}
+
+function findPath() {
+    var src = parseInt($('#path-start').val());
+    var dst = parseInt($('#path-end').val());
+    if (Number.isNaN(src) || Number.isNaN(dst)) {
+        setPathResult(errorText('Please, fill molecule IDs for start and end of the path'));
+        return;
+    }
+    $.ajax({
+        url: './find_path/' + src + '/' + dst,
+        dataType: 'text',
+        success: function(data) {
+            setPathResult(data.replace(/\n/g, '<br/>'));
+        },
+        error: function(resp) {
+            setPathResult(errorText(resp.responseText));
+        }
+    });
+}
+
+function setPathResult(res) {
+    $('#path-result').html(res.replace(/\n/g, '<br/>'));
 }
 

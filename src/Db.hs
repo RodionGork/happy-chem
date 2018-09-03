@@ -80,6 +80,7 @@ instance Persistent Rct.Reaction where
 
 strFromValue :: Maybe Hb.Value -> String
 strFromValue (Just (Hb.T val)) = T.unpack val
+strFromValue (Just (Hb.F val)) = show val
 strFromValue _ = ""
 
 maybeStrFromValue :: Maybe Hb.Value -> Maybe String
@@ -181,7 +182,7 @@ queryForCreate label params =
 
 shortestPath :: Int -> Int -> IO (Maybe (Mol.Molecule, [(Rct.Reaction, Mol.Molecule)]))
 shortestPath srcId dstId = do
-    let q = "MATCH (src:Molecule {id:{s}}),(dst:Molecule {id:{d}}), p=shortestPath((src)-[*..7]->(dst)) RETURN p"
+    let q = "MATCH (src:Molecule {id:{s}}),(dst:Molecule {id:{d}}), p=shortestPath((src)-[*..11]->(dst)) RETURN p"
         p = Map.fromList [(T.pack "s", Hb.I srcId), (T.pack "d", Hb.I dstId)]
     records <- wrapInConnection $ Hb.queryP (T.pack q) p
     case records of
@@ -208,11 +209,18 @@ reactionIngredients rid rel = do
     records <- wrapInConnection $ Hb.queryP (T.pack q) p
     res <- Prelude.mapM (\r -> do
         n <- toNode r
-        let m = fromNode n
+        let m = if rel /= "ACCELERATE"
+                    then show (fromNode n :: Mol.Molecule)
+                    else show (fromNode n :: Catl.Catalyst)
         s <- toRel r
+        putStrLn $ show s
         let Hb.Relationship {Hb.relProps = props} = s
-        return (m :: Mol.Molecule, props)) records
+        return (m, relationProperties props)) records
     return res
+
+relationProperties propMap =
+    let tupleToStr = (\(a, b) -> T.unpack a ++ "=" ++ (strFromValue $ Just b))
+    in List.intercalate ", " $ Prelude.map tupleToStr $ Map.toList propMap
 
 -- not used now, just don't forget
 initDb :: IO Bool

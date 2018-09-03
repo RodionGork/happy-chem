@@ -111,18 +111,24 @@ doGetReaction strId = do
     rct <- Db.fetchReaction rid
     case rct of
         Just r -> do
-            ingredients <- doGetIngredients rid
-            return $ Just $ show r ++ "\n" ++ (showIngredients ingredients)
+            (reag, prod, catl) <- doGetIngredients rid
+            return $ Just $ show r ++ "\n"
+                ++ (showIngredients "Reagents" reag) ++ "\n"
+                ++ (showIngredients "Products" prod) ++ "\n"
+                ++ (showIngredients "Accelerated by" catl) ++ "\n"
         Nothing ->
             return Nothing
 
 doGetIngredients rid = do
-    records <- Db.reactionIngredients rid "REAGENT_IN"
-    putStrLn $ show records
-    return []
+    reagents <- Db.reactionIngredients rid "REAGENT_IN"
+    products <- Db.reactionIngredients rid "PRODUCT_FROM"
+    catalysts <- Db.reactionIngredients rid "ACCELERATE"
+    return (reagents, products, catalysts)
 
-showIngredients _ =
-    ""
+showIngredients title list =
+    let tupleStr = (\(m, s) -> m ++ " (" ++ s ++ ")")
+    in title ++ ":\n" ++ (List.intercalate "\n" $ Prelude.map tupleStr list)
+
 doGetAllReactions :: IO (Maybe String)
 doGetAllReactions =
     doGetAllEntities Db.fetchAllReactions
