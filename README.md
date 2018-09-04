@@ -17,6 +17,14 @@ Just learning how to create haskell project
 6. Verify by querying reaction by its ID (you'll see all ingredients etc)
 7. Try `path_find` feature, entering ID's of two molecules.
 
+### Settings
+
+Few system parameters could be configured with env variables:
+
+- `HTTP_PORT` - on which port web-server listens
+- `DB_HOST` - database host to connect to
+- `DB_USER` and `DB_PWD` - credentials to use with database
+
 ### Endpoints details
 
 GET (returns data as text):
@@ -47,4 +55,4 @@ Note that ID's for molecules and catalysts match their PubChem numbers.
 3. Use Readable for entities
 4. Streamline fetching path and reaction ingredients
 5. Allow updating / deleting entities and links
-6. Add settings for DB host/user/pwd and app port (just forgotten)
+6. I avoided using `LANGUAGE` pragma to see what "default" haskell looks like - it may be enabled to simplify code

@@ -24,10 +24,11 @@ import qualified Data.Map as Map
 import Data.Maybe (Maybe, listToMaybe, maybe)
 import qualified Data.Text as T
 
+import qualified Config
 import qualified Entities.Molecule as Mol
 import qualified Entities.Catalyst as Catl
 import qualified Entities.Reaction as Rct
-import qualified Relations as Relations
+import qualified Relations
 
 class Persistent a where
     fromNode :: Hb.Node -> a
@@ -92,10 +93,10 @@ intFromValue (Just (Hb.I val)) = val
 intFromValue _ = 0
 
 wrapInConnection query = do
-    pipe <- Hb.connect $ def {
-        Hb.host = "172.17.0.1",
-        Hb.user = T.pack "neo4j",
-        Hb.password = T.pack "j4oen"}
+    dbHost <- Config.dataBaseHost
+    dbUser <- Config.dataBaseUser
+    dbPwd <- Config.dataBasePassword
+    pipe <- Hb.connect $ def {Hb.host = dbHost, Hb.user = T.pack dbUser, Hb.password = T.pack dbPwd}
     records <- Hb.run pipe query
     Hb.close pipe
     return records
@@ -165,7 +166,7 @@ storeEntity entity = do
         query = queryForCreate (show $ typeOf entity) params
     executeCreation query params
 
-executeCreation query params = do
+executeCreation query params =
     catchAny (storeEntityUnsafe query params)
         (\e -> do
             print e
@@ -176,9 +177,9 @@ storeEntityUnsafe query params = do
     return True
 
 queryForCreate label params =
-    let f = (\k -> let s = T.unpack k in s ++ ":{" ++ s ++ "}")
+    let f k = let s = T.unpack k in s ++ ":{" ++ s ++ "}"
         attribs = Prelude.map f $ Map.keys params
-    in "CREATE (:" ++ label ++ " {" ++ (List.intercalate "," attribs) ++ "})"
+    in "CREATE (:" ++ label ++ " {" ++ List.intercalate "," attribs ++ "})"
 
 shortestPath :: Int -> Int -> IO (Maybe (Mol.Molecule, [(Rct.Reaction, Mol.Molecule)]))
 shortestPath srcId dstId = do
@@ -200,14 +201,14 @@ pathNodesToList :: [Hb.Node] -> [(Rct.Reaction, Mol.Molecule)]
 pathNodesToList [] =
     []
 pathNodesToList (rct:mol:tail) =
-    [(fromNode rct, fromNode mol)] ++ (pathNodesToList tail)
+    (fromNode rct, fromNode mol) : pathNodesToList tail
 
 reactionIngredients rid rel = do
     -- failed to find a way to match rel type with parameter :(
     let q = "MATCH (r:Reaction {id:{rid}})-[x:" ++ rel ++ "]-(n) RETURN x,n"
         p = Map.fromList [(T.pack "rid", Hb.I rid)]
     records <- wrapInConnection $ Hb.queryP (T.pack q) p
-    res <- Prelude.mapM (\r -> do
+    Prelude.mapM (\r -> do
         n <- toNode r
         let m = if rel /= "ACCELERATE"
                     then show (fromNode n :: Mol.Molecule)
@@ -215,10 +216,9 @@ reactionIngredients rid rel = do
         s <- toRel r
         let Hb.Relationship {Hb.relProps = props} = s
         return (m, relationProperties props)) records
-    return res
 
 relationProperties propMap =
-    let tupleToStr = (\(a, b) -> T.unpack a ++ "=" ++ (strFromValue $ Just b))
+    let tupleToStr (a, b) = T.unpack a ++ "=" ++ strFromValue (Just b)
     in List.intercalate ", " $ Prelude.map tupleToStr $ Map.toList propMap
 
 -- not used now, just don't forget

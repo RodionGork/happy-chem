@@ -15,7 +15,7 @@ instance Show Molecule where
 
 fromStrings :: String -> String -> Molecule
 fromStrings strId smilesAndName =
-    let (smiles, (_:name)) = List.break (== ' ') smilesAndName
+    let (smiles, _:name) = List.break (== ' ') smilesAndName
         pcid = read strId :: Int
     in Molecule {Entities.Molecule.id = pcid, iupacName = name, smiles = smiles}
 

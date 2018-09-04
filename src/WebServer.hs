@@ -14,6 +14,7 @@ import qualified Network.HTTP.Types as HTTP.Types
 import Network.Wai.Internal (ResponseReceived(..))
 import qualified Network.HTTP.Types.Header as HTTP.Header
 
+import qualified Config
 import qualified Db
 import qualified Entities.Molecule as Mol
 import qualified Entities.Catalyst as Catl
@@ -21,7 +22,7 @@ import qualified Entities.Reaction as Rct
 
 start :: IO ()
 start = do
-    let port = 18080
+    port <- Config.webServerPort
     putStrLn $ "Listening on port " ++ show port
     Warp.run port app
 
@@ -48,9 +49,9 @@ doGet req resp =
         ["static", fileName] -> respondFile resp fileName
         ["molecule"] -> respondFun resp doGetAllMolecules
         ["molecule", strId] -> respondFun resp $ doGetMolecule strId
-        ["catalyst"] -> respondFun resp $ doGetAllCatalysts
+        ["catalyst"] -> respondFun resp doGetAllCatalysts
         ["catalyst", strId] -> respondFun resp $ doGetCatalyst strId
-        ["reaction"] -> respondFun resp $ doGetAllReactions
+        ["reaction"] -> respondFun resp doGetAllReactions
         ["reaction", strId] -> respondFun resp $ doGetReaction strId
         ["find_path", srcId, dstId] -> respondFun resp $ doGetPath srcId dstId
         _ -> respond resp Nothing
@@ -113,9 +114,9 @@ doGetReaction strId = do
         Just r -> do
             (reag, prod, catl) <- doGetIngredients rid
             return $ Just $ show r ++ "\n"
-                ++ (showIngredients "Reagents" reag) ++ "\n"
-                ++ (showIngredients "Products" prod) ++ "\n"
-                ++ (showIngredients "Accelerated by" catl) ++ "\n"
+                ++ showIngredients "Reagents" reag ++ "\n"
+                ++ showIngredients "Products" prod ++ "\n"
+                ++ showIngredients "Accelerated by" catl ++ "\n"
         Nothing ->
             return Nothing
 
@@ -126,8 +127,8 @@ doGetIngredients rid = do
     return (reagents, products, catalysts)
 
 showIngredients title list =
-    let tupleStr = (\(m, s) -> m ++ " (" ++ s ++ ")")
-    in title ++ ":\n" ++ (List.intercalate "\n" $ Prelude.map tupleStr list)
+    let tupleStr (m, s) = m ++ " (" ++ s ++ ")"
+    in title ++ ":\n" ++ List.intercalate "\n" (Prelude.map tupleStr list)
 
 doGetAllReactions :: IO (Maybe String)
 doGetAllReactions =
@@ -138,15 +139,15 @@ doPostReaction strId body =
     doPostEntity Rct.fromStrings strId body
 
 doPostReagent :: C8.ByteString -> IO (Maybe String)
-doPostReagent body = do
+doPostReagent body =
     doStore $ Db.storeReagent $ C8.unpack body
 
 doPostProduct :: C8.ByteString -> IO (Maybe String)
-doPostProduct body = do
+doPostProduct body =
     doStore $ Db.storeProduct $ C8.unpack body
 
 doPostAccelerate :: C8.ByteString -> IO (Maybe String)
-doPostAccelerate body = do
+doPostAccelerate body =
     doStore $ Db.storeAccelerate $ C8.unpack body
 
 doGetEntity :: (Show a) => (Int -> IO (Maybe a)) -> String -> IO (Maybe String)
@@ -180,6 +181,6 @@ doGetPath srcId dstId = do
 
 pathToText :: (Mol.Molecule, [(Rct.Reaction, Mol.Molecule)]) -> String
 pathToText (src, list) =
-    let pathElem = (\(r, m) -> show r ++ "\n" ++ show m)
-    in show src ++ "\n" ++ (List.intercalate "\n" (Prelude.map pathElem list))
+    let pathElem (r, m) = show r ++ "\n" ++ show m
+    in show src ++ "\n" ++ List.intercalate "\n" (Prelude.map pathElem list)
 
